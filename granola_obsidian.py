@@ -19,6 +19,7 @@ Techniques adapted from: https://github.com/dannymcc/Granola-to-Obsidian
 import asyncio
 import json
 import os
+import platform
 import re
 from datetime import date, datetime
 from html.parser import HTMLParser
@@ -28,12 +29,21 @@ from typing import Dict, List, Optional, Tuple
 import httpx
 
 # ── Configure your paths ───────────────────────────────────────────────────
-# Update these to match your Obsidian vault location
+# Update these to match your Obsidian vault location.
+# Path.home() resolves to C:\Users\YourName on Windows, /Users/yourname on Mac.
 OBSIDIAN_CLASSES  = Path.home() / "Documents/Obsidian Vault/Classes"
 OBSIDIAN_MEETINGS = Path.home() / "Documents/Obsidian Vault/Meetings"
 
-GRANOLA_AUTH_PATH = Path.home() / "Library/Application Support/Granola/supabase.json"
-ENV_PATH          = Path(__file__).parent / ".env"
+# Granola auth — resolved automatically per platform
+_SYSTEM = platform.system()
+if _SYSTEM == "Windows":
+    # %APPDATA%\Granola\supabase.json  (e.g. C:\Users\You\AppData\Roaming\Granola\)
+    GRANOLA_AUTH_PATH = Path(os.environ.get("APPDATA", Path.home() / "AppData/Roaming")) / "Granola/supabase.json"
+else:
+    # macOS: ~/Library/Application Support/Granola/supabase.json
+    GRANOLA_AUTH_PATH = Path.home() / "Library/Application Support/Granola/supabase.json"
+
+ENV_PATH = Path(__file__).parent / ".env"
 
 GRANOLA_API   = "https://api.granola.ai"
 ANTHROPIC_API = "https://api.anthropic.com/v1/messages"

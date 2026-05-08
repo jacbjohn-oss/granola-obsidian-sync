@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-16"?>
+<!--
+  Windows Task Scheduler definition for granola-obsidian-sync.
+  Runs granola_obsidian.py daily at 9:00 PM.
+
+  HOW TO INSTALL:
+  1. Edit the <Command> and <WorkingDirectory> paths below to match where you placed the script.
+  2. Open Task Scheduler (search "Task Scheduler" in Start).
+  3. Click "Import Task..." in the right panel and select this file.
+     — OR — run in an elevated PowerShell:
+       Register-ScheduledTask -Xml (Get-Content "granola-obsidian.xml" -Raw) -TaskName "granola-obsidian" -Force
+  4. The task will now run daily at 9 PM.
+
+  To run manually: right-click the task → "Run"
+  Logs are written to %USERPROFILE%\AppData\Local\granola-obsidian\granola-obsidian.log
+-->
+<Task version="1.4" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
+  <RegistrationInfo>
+    <Description>Syncs Granola meeting notes to Obsidian daily at 9 PM.</Description>
+    <URI>\granola-obsidian</URI>
+  </RegistrationInfo>
+
+  <Triggers>
+    <CalendarTrigger>
+      <StartBoundary>2024-01-01T21:00:00</StartBoundary>
+      <Enabled>true</Enabled>
+      <ScheduleByDay>
+        <DaysInterval>1</DaysInterval>
+      </ScheduleByDay>
+    </CalendarTrigger>
+  </Triggers>
+
+  <Principals>
+    <Principal id="Author">
+      <!-- Runs as the logged-in user -->
+      <LogonType>InteractiveToken</LogonType>
+      <RunLevel>LeastPrivilege</RunLevel>
+    </Principal>
+  </Principals>
+
+  <Settings>
+    <MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>
+    <DisallowStartIfOnBatteries>false</DisallowStartIfOnBatteries>
+    <StopIfGoingOnBatteries>false</StopIfGoingOnBatteries>
+    <ExecutionTimeLimit>PT1H</ExecutionTimeLimit>
+    <Enabled>true</Enabled>
+    <RunOnlyIfNetworkAvailable>true</RunOnlyIfNetworkAvailable>
+  </Settings>
+
+  <Actions Context="Author">
+    <Exec>
+      <!-- Update this path to where you placed granola_obsidian.py -->
+      <Command>python</Command>
+      <Arguments>"%USERPROFILE%\granola-obsidian\granola_obsidian.py" >> "%USERPROFILE%\AppData\Local\granola-obsidian\granola-obsidian.log" 2>&amp;1</Arguments>
+      <WorkingDirectory>%USERPROFILE%\granola-obsidian</WorkingDirectory>
+    </Exec>
+  </Actions>
+</Task>

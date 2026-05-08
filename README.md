@@ -2,7 +2,7 @@
 
 Automatically syncs [Granola](https://www.granola.ai) meeting notes into an [Obsidian](https://obsidian.md) vault — with optional Claude AI enrichment that adds frameworks, key takeaways, and deeper analysis to every note.
 
-No Canvas LMS dependency. Works for any Obsidian vault, any course names, any meeting categories.
+Works on **macOS and Windows**. Works for any Obsidian vault, any course names, any meeting categories.
 
 ## What it does
 
@@ -21,33 +21,54 @@ Non-class meetings are automatically sorted using two layers:
 
 Default fallback: `Meetings/Other/`
 
+---
+
 ## Setup
 
 ### 1. Dependencies
 
+**macOS**
 ```bash
 pip3 install httpx
 ```
 
+**Windows** (PowerShell or Command Prompt)
+```
+pip install httpx
+```
+
+Python 3.8+ required. Download from [python.org](https://python.org) if needed.
+
+---
+
 ### 2. Granola auth
 
-The script reads your Granola token automatically from:
-```
-~/Library/Application Support/Granola/supabase.json
-```
-No configuration needed — just be logged into Granola on your Mac.
+The script reads your Granola token automatically — no configuration needed, just be logged into Granola.
+
+| Platform | Auth file location |
+|----------|--------------------|
+| macOS | `~/Library/Application Support/Granola/supabase.json` |
+| Windows | `%APPDATA%\Granola\supabase.json` |
+
+---
 
 ### 3. Configure your vault paths
 
 Edit the paths near the top of `granola_obsidian.py`:
+
 ```python
 OBSIDIAN_CLASSES  = Path.home() / "Documents/Obsidian Vault/Classes"
 OBSIDIAN_MEETINGS = Path.home() / "Documents/Obsidian Vault/Meetings"
 ```
 
+`Path.home()` resolves to your user home directory on both platforms (`C:\Users\You` on Windows, `/Users/you` on Mac). Adjust the subfolder to match where your vault lives.
+
+---
+
 ### 4. Configure class matching
 
 Edit `CLASS_PATTERNS` to match your course titles as they appear in Granola:
+
 ```python
 CLASS_PATTERNS = [
     ("cs 221",    "CS221"),       # matches any title containing "cs 221"
@@ -58,31 +79,33 @@ CLASS_PATTERNS = [
 
 The matched name must correspond to a `.md` file in your `Classes/` folder.
 
+---
+
 ### 5. Optional: Claude enrichment
 
-Create a `.env` file next to the script (or set the env var):
+Create a `.env` file next to the script:
 ```
 ANTHROPIC_API_KEY=sk-ant-...
 ```
 
-When set, every synced note gets a rich synthesis block with frameworks, takeaways, and outside connections. Uses `claude-sonnet-4-5` (configurable via `ENRICH_MODEL`).
+When set, every synced note gets a rich synthesis block with frameworks, takeaways, and connections to outside sources. Uses `claude-sonnet-4-5` (configurable via `ENRICH_MODEL`).
 
-### 6. Schedule with launchd (macOS)
+---
 
-Edit `launchd/com.granola-obsidian.plist` — update the script path — then install:
+### 6. Schedule automatic daily runs
+
+#### macOS — launchd
 
 ```bash
-# Move the script somewhere outside of Desktop/Documents to avoid macOS TCC blocks:
+# Keep the script outside ~/Desktop and ~/Documents (macOS TCC blocks background access there)
 mkdir -p ~/.granola-obsidian
 cp granola_obsidian.py ~/.granola-obsidian/
-cp .env ~/.granola-obsidian/   # if using enrichment
+cp .env ~/.granola-obsidian/        # if using enrichment
 
-# Edit the plist, then install:
+# Install the launchd agent (runs at 9 PM daily)
 cp launchd/com.granola-obsidian.plist ~/Library/LaunchAgents/
 launchctl load ~/Library/LaunchAgents/com.granola-obsidian.plist
 ```
-
-> **macOS TCC note:** launchd background processes are blocked from accessing files in `~/Desktop` and `~/Documents` without Full Disk Access. Keep the script in `~/.granola-obsidian/` or another non-protected location.
 
 Check logs:
 ```bash
@@ -93,6 +116,35 @@ Run manually:
 ```bash
 python3 granola_obsidian.py
 ```
+
+#### Windows — Task Scheduler
+
+1. Copy the script to a permanent location, e.g. `C:\Users\You\granola-obsidian\`
+2. Copy `.env` to the same folder (if using enrichment)
+3. Import the task (run PowerShell as Administrator):
+
+```powershell
+Register-ScheduledTask `
+  -Xml (Get-Content "task-scheduler\granola-obsidian.xml" -Raw) `
+  -TaskName "granola-obsidian" `
+  -Force
+```
+
+Or open **Task Scheduler** → **Action** → **Import Task…** → select `task-scheduler\granola-obsidian.xml`.
+
+> Edit the `<WorkingDirectory>` path in the XML to match where you placed the script before importing.
+
+Check logs:
+```
+%USERPROFILE%\AppData\Local\granola-obsidian\granola-obsidian.log
+```
+
+Run manually:
+```powershell
+python "%USERPROFILE%\granola-obsidian\granola_obsidian.py"
+```
+
+---
 
 ## Note format
 
@@ -148,6 +200,8 @@ tags:
 ---
 ```
 
+---
+
 ## Extending categorization
 
 Add keyword rules to `_TITLE_CATEGORY_RULES` in the script:
@@ -170,6 +224,8 @@ _GRANOLA_FOLDER_MAP = {
     "clients":  "Work/Clients",
 }
 ```
+
+---
 
 ## Credits
 
